@@ -1,5 +1,6 @@
 import argv
 import day1
+import day2
 import gleam/int
 import gleam/io
 
@@ -16,6 +17,7 @@ fn days(day: String) -> Nil {
     Ok(x) ->
       case x {
         1 -> day1.solve()
+        2 -> day2.solve()
         _ -> io.println_error("Solution for day #" <> day <> " not found")
       }
   }
