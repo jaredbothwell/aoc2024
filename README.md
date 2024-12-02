@@ -6,14 +6,14 @@ Learning Gleam with Advent of Code this year
 
 Input files are added to `/input/day<number>.txt`
 
-
 ### Run a single day's solution
 
 ```sh
 gleam run <number>
 ```
 
-### Run tests for every day
+### Run all tests
+
 ```sh
 gleam test
 ```
