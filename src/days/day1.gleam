@@ -1,4 +1,4 @@
-import gleam/dict
+import gleam/dict.{type Dict}
 import gleam/int
 import gleam/io
 import gleam/list
@@ -6,7 +6,7 @@ import gleam/option.{None, Some}
 import gleam/string
 import utils
 
-pub fn solve() {
+pub fn solve() -> Nil {
   let input = parse_input()
   io.println("Day 1:")
   io.println("  Part 1: " <> int.to_string(part1(input)))
@@ -15,8 +15,8 @@ pub fn solve() {
 
 pub fn parse_input() -> #(List(Int), List(Int)) {
   utils.read_input("day1")
-  |> list.fold(from: [], with: fn(acc, line) {
-    case string.split(line, on: "   ") {
+  |> list.fold([], fn(acc, line) {
+    case string.split(line, "   ") {
       [] | [_] | [_, _, _, ..] -> acc
       [first, second] -> {
         case int.parse(first), int.parse(second) {
@@ -30,32 +30,29 @@ pub fn parse_input() -> #(List(Int), List(Int)) {
   |> list.unzip()
 }
 
-pub fn part1(input: #(List(Int), List(Int))) {
-  list.zip(
-    list.sort(input.0, by: int.compare),
-    list.sort(input.1, by: int.compare),
-  )
-  |> list.fold(from: 0, with: fn(sum, pair) {
-    sum + int.absolute_value(pair.0 - pair.1)
-  })
+pub fn part1(input: #(List(Int), List(Int))) -> Int {
+  list.zip(list.sort(input.0, int.compare), list.sort(input.1, int.compare))
+  |> list.fold(0, fn(sum, pair) { sum + int.absolute_value(pair.0 - pair.1) })
 }
 
-pub fn part2(input: #(List(Int), List(Int))) {
-  let freq =
-    list.fold(input.1, dict.new(), fn(dict, item) {
-      dict.upsert(dict, update: item, with: fn(x) {
-        case x {
-          Some(i) -> i + 1
-          None -> 1
-        }
-      })
-    })
-
-  list.fold(input.0, from: 0, with: fn(sum, key) {
+pub fn part2(input: #(List(Int), List(Int))) -> Int {
+  let freq = get_frequency_dict(input.1)
+  list.fold(input.0, 0, fn(sum, key) {
     sum
     + case dict.get(freq, key) {
       Ok(key_frequency) -> key_frequency * key
       _ -> 0
     }
+  })
+}
+
+fn get_frequency_dict(items: List(value)) -> Dict(value, Int) {
+  list.fold(items, dict.new(), fn(dict, item) {
+    dict.upsert(dict, item, fn(x) {
+      case x {
+        Some(i) -> i + 1
+        None -> 1
+      }
+    })
   })
 }

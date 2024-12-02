@@ -1,10 +1,10 @@
 import argv
-import day1
-import day2
+import days/day1
+import days/day2
 import gleam/int
 import gleam/io
 
-pub fn main() {
+pub fn main() -> Nil {
   case argv.load().arguments {
     [x] -> days(x)
     _ -> io.println_error("Usage: gleam run <number>")
