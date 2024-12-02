@@ -1,24 +1,19 @@
-# aoc2024
+# Advent of Code 2024 - Gleam
 
-[![Package Version](https://img.shields.io/hexpm/v/aoc2024)](https://hex.pm/packages/aoc2024)
-[![Hex Docs](https://img.shields.io/badge/hex-docs-ffaff3)](https://hexdocs.pm/aoc2024/)
+Learning Gleam with Advent of Code this year
 
-```sh
-gleam add aoc2024@1
-```
-```gleam
-import aoc2024
+### Input
 
-pub fn main() {
-  // TODO: An example of the project in use
-}
-```
+Input files are added to `/input/day<number>.txt`
 
-Further documentation can be found at <https://hexdocs.pm/aoc2024>.
 
-## Development
+### Run a single day's solution
 
 ```sh
-gleam run   # Run the project
-gleam test  # Run the tests
+gleam run <number>
+```
+
+### Run tests for every day
+```sh
+gleam test
 ```
