@@ -2,6 +2,7 @@ import gleam/dict
 import gleam/int
 import gleam/io
 import gleam/list
+import gleam/option.{None, Some}
 import gleam/string
 import utils
 
@@ -50,13 +51,13 @@ pub fn part1(input: #(List(Int), List(Int))) {
 pub fn part2(input: #(List(Int), List(Int))) {
   let freq =
     list.fold(input.1, dict.new(), fn(acc, item) {
-      let count = case dict.get(acc, item) {
-        Ok(val) -> val
-        _ -> 0
-      }
-      dict.insert(acc, item, count + 1)
+      dict.upsert(acc, update: item, with: fn(x) {
+        case x {
+          Some(i) -> i + 1
+          None -> 1
+        }
+      })
     })
-
 
   list.fold(input.0, from: 0, with: fn(acc, key) {
     acc
