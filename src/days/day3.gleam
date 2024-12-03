@@ -54,36 +54,21 @@ fn rec(
     _ ->
       case state {
         Idle ->
-          case part_num {
-            One ->
-              case input {
-                "mul(" <> rest -> rec(rest, Open, result, True, One)
-                _ ->
-                  rec(
-                    string.drop_start(input, 1),
-                    Idle,
-                    result,
-                    mul_enabled,
-                    part_num,
-                  )
-              }
-            Two ->
-              case mul_enabled, input {
-                True, "mul(" <> rest ->
-                  rec(rest, Open, result, mul_enabled, Two)
-                _, "do()" <> rest -> rec(rest, Idle, result, True, Two)
-                _, "don't()" <> rest -> {
-                  rec(rest, Idle, result, False, Two)
-                }
-                _, _ ->
-                  rec(
-                    string.drop_start(input, 1),
-                    Idle,
-                    result,
-                    mul_enabled,
-                    part_num,
-                  )
-              }
+          case part_num, mul_enabled, input {
+            One, _, "mul(" <> rest | Two, True, "mul(" <> rest ->
+              rec(rest, Open, result, mul_enabled, part_num)
+            Two, _, "do()" <> rest -> rec(rest, Idle, result, True, Two)
+            Two, _, "don't()" <> rest -> {
+              rec(rest, Idle, result, False, Two)
+            }
+            _, _, _ ->
+              rec(
+                string.drop_start(input, 1),
+                Idle,
+                result,
+                mul_enabled,
+                part_num,
+              )
           }
         Open ->
           case
