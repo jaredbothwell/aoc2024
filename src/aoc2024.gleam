@@ -1,3 +1,4 @@
+import days/day4
 import argv
 import days/day1
 import days/day2
@@ -20,7 +21,7 @@ fn days(day: String) -> Nil {
         1 -> day1.solve()
         2 -> day2.solve()
         3 -> day3.solve()
-        // 4 -> day4.solve()
+        4 -> day4.solve()
         // 5 -> day5.solve()
         // 6 -> day6.solve()
         // 7 -> day7.solve()

@@ -1,6 +1,5 @@
 import gleam/int
 import gleam/io
-import gleam/list
 import gleam/option
 import gleam/string
 import utils
@@ -18,15 +17,11 @@ pub fn parse_input() {
 }
 
 pub fn part1(input) -> Int {
-  rec(input, Idle, [], True, One)
-  |> list.map(fn(pair) { pair.0 * pair.1 })
-  |> list.fold(0, fn(sum, val) { sum + val })
+  rec(input, Idle, 0, True, One)
 }
 
 pub fn part2(input) -> Int {
-  rec(input, Idle, [], True, Two)
-  |> list.map(fn(pair) { pair.0 * pair.1 })
-  |> list.fold(0, fn(sum, val) { sum + val })
+  rec(input, Idle, 0, True, Two)
 }
 
 type PartNum {
@@ -38,14 +33,14 @@ type State {
   Idle
   Open
   FirstNum(left_digits: String)
-  Comma(left_digits: String)
-  SecondNum(left_digits: String, right_digits: String)
+  Comma(left_val: Int)
+  SecondNum(left_val: Int, right_digits: String)
 }
 
 fn rec(
   input: String,
   state: State,
-  result: List(#(Int, Int)),
+  result: Int,
   mul_enabled: Bool,
   part_num: PartNum,
 ) {
@@ -54,36 +49,21 @@ fn rec(
     _ ->
       case state {
         Idle ->
-          case part_num {
-            One ->
-              case input {
-                "mul(" <> rest -> rec(rest, Open, result, True, One)
-                _ ->
-                  rec(
-                    string.drop_start(input, 1),
-                    Idle,
-                    result,
-                    mul_enabled,
-                    part_num,
-                  )
-              }
-            Two ->
-              case mul_enabled, input {
-                True, "mul(" <> rest ->
-                  rec(rest, Open, result, mul_enabled, Two)
-                _, "do()" <> rest -> rec(rest, Idle, result, True, Two)
-                _, "don't()" <> rest -> {
-                  rec(rest, Idle, result, False, Two)
-                }
-                _, _ ->
-                  rec(
-                    string.drop_start(input, 1),
-                    Idle,
-                    result,
-                    mul_enabled,
-                    part_num,
-                  )
-              }
+          case part_num, mul_enabled, input {
+            One, _, "mul(" <> rest | Two, True, "mul(" <> rest ->
+              rec(rest, Open, result, mul_enabled, part_num)
+            Two, _, "do()" <> rest -> rec(rest, Idle, result, True, Two)
+            Two, _, "don't()" <> rest -> {
+              rec(rest, Idle, result, False, Two)
+            }
+            _, _, _ ->
+              rec(
+                string.drop_start(input, 1),
+                Idle,
+                result,
+                mul_enabled,
+                part_num,
+              )
           }
         Open ->
           case
@@ -112,16 +92,16 @@ fn rec(
           }
 
         FirstNum(left_digits) ->
-          case string.first(input) {
-            Ok(",") ->
+          case string.first(input), int.parse(left_digits) {
+            Ok(","), Ok(left_val) ->
               rec(
                 string.drop_start(input, 1),
-                Comma(left_digits),
+                Comma(left_val),
                 result,
                 mul_enabled,
                 part_num,
               )
-            char_result -> {
+            char_result, _ -> {
               let char = char_result |> option.from_result |> option.unwrap("")
               case char |> int.parse {
                 Ok(_) ->
@@ -168,34 +148,27 @@ fn rec(
                 part_num,
               )
           }
-        SecondNum(left_digits, right_digits) ->
-          case string.first(input) {
-            Ok(")") ->
-              case int.parse(left_digits), int.parse(right_digits) {
-                Ok(left_val), Ok(right_val) ->
+        SecondNum(left_val, right_digits) ->
+          case string.first(input), int.parse(right_digits) {
+            Ok(")"), Ok(right_val) ->
+              rec(
+                string.drop_start(input, 1),
+                Idle,
+                result + left_val * right_val,
+                mul_enabled,
+                part_num,
+              )
+            char_result, _ -> {
+              case
+                char_result
+                |> option.from_result
+                |> option.unwrap("")
+                |> int.parse
+              {
+                Ok(digit) ->
                   rec(
                     string.drop_start(input, 1),
-                    Idle,
-                    list.append(result, [#(left_val, right_val)]),
-                    mul_enabled,
-                    part_num,
-                  )
-                _, _ ->
-                  rec(
-                    string.drop_start(input, 1),
-                    Idle,
-                    result,
-                    mul_enabled,
-                    part_num,
-                  )
-              }
-            char_result -> {
-              let char = char_result |> option.from_result |> option.unwrap("")
-              case char |> int.parse {
-                Ok(_) ->
-                  rec(
-                    string.drop_start(input, 1),
-                    SecondNum(left_digits, right_digits <> char),
+                    SecondNum(left_val, right_digits <> int.to_string(digit)),
                     result,
                     mul_enabled,
                     part_num,
