@@ -1,7 +1,7 @@
 import gleam/int
 import gleam/io
 import gleam/list
-import gleam/option.{None, Some}
+import gleam/option.{type Option, None, Some}
 import gleam/set.{type Set}
 import gleam/string
 import utils
@@ -18,18 +18,28 @@ type Direction {
 
 fn to_direction_vector(dir: Direction) -> DirectionVector {
   case dir {
-    Up -> #(-1, 0)
-    Down -> #(1, 0)
-    Left -> #(0, -1)
-    Right -> #(0, 1)
+    Up -> DirectionVector(0, -1)
+    Down -> DirectionVector(0, 1)
+    Left -> DirectionVector(-1, 0)
+    Right -> DirectionVector(1, 0)
   }
 }
 
-type DirectionVector =
-  #(Int, Int)
+type DirectionVector {
+  DirectionVector(x: Int, y: Int)
+}
 
-type Position =
-  #(Int, Int)
+type Position {
+  Position(x: Int, y: Int)
+}
+
+type PathState {
+  PathState(position: Position, direction: Direction)
+}
+
+type MapSquare {
+  MapSquare(value: Option(String), position: Position)
+}
 
 pub fn solve() -> Nil {
   let input =
@@ -47,72 +57,57 @@ pub fn parse_input(input: String) -> Map {
 }
 
 pub fn part1(map: Map) -> Int {
-  let start = find_start(map)
-  let visited = set.new() |> set.insert(start)
-  let result = step(map, start, Up, visited)
-  set.size(result)
+  case find_start(map) {
+    Ok(start) -> step1(map, start, Up, set.insert(set.new(), start)) |> set.size
+    _ -> 0
+  }
 }
 
-fn step(
+pub fn part2(map: Map) -> Int {
+  case find_start(map) {
+    Ok(start) -> {
+      step1(map, start, Up, set.new())
+      |> set.to_list
+      |> count_loops_after_adding_obstacle(map, start)
+    }
+    _ -> 0
+  }
+}
+
+fn step1(
   map: Map,
   pos: Position,
   dir: Direction,
   visited: Set(Position),
 ) -> Set(Position) {
-  let dir_vec = to_direction_vector(dir)
-  let next_pos = #(pos.0 + dir_vec.0, pos.1 + dir_vec.1)
-  let next =
-    map
-    |> at_index(next_pos.0)
-    |> option.unwrap([])
-    |> at_index(next_pos.1)
-
-  case next {
-    Some(char) -> {
-      case char {
-        "#" -> step(map, pos, turn(dir), visited)
-        _ -> step(map, next_pos, dir, set.insert(visited, next_pos))
-      }
-    }
+  let next = next_map_square(map, pos, dir)
+  case next.value {
     None -> visited
+    Some("#") -> step1(map, pos, turn_right(dir), visited)
+    _ -> step1(map, next.position, dir, set.insert(visited, next.position))
   }
 }
 
-fn at_index(list: List(a), index: Int) {
-  // list.drop returns whole list when using a negative index but I need an empty list instead
-  let i = case index {
-    x if x < 0 -> list.length(list)
-    x -> x
-  }
-
-  list
-  |> list.drop(i)
-  |> list.first
-  |> option.from_result
-}
-
-fn find_start(map: Map) -> Position {
-  map
-  |> list.index_fold(Error(Nil), fn(result, row, i) {
-    let x =
-      row
-      |> list.index_fold(Error(Nil), fn(row_result, char, j) {
-        case char {
-          "^" -> Ok(j)
-          _ -> row_result
-        }
-      })
-
-    case x {
-      Ok(j) -> Ok(#(i, j))
-      _ -> result
+fn step2(
+  map: Map,
+  pos: Position,
+  dir: Direction,
+  visited: Set(PathState),
+) -> Bool {
+  let next = next_map_square(map, pos, dir)
+  let has_visited = set.contains(visited, PathState(next.position, dir))
+  case has_visited, next.value {
+    True, _ -> True
+    _, Some("#") -> step2(map, pos, turn_right(dir), visited)
+    _, Some(_) -> {
+      let visited = set.insert(visited, PathState(next.position, dir))
+      step2(map, next.position, dir, visited)
     }
-  })
-  |> option.from_result
-  |> option.unwrap(#(0, 0))
+    _, None -> False
+  }
 }
 
-fn turn(dir: Direction) -> Direction {
+fn turn_right(dir: Direction) -> Direction {
   case dir {
     Up -> Right
     Right -> Down
@@ -121,79 +116,87 @@ fn turn(dir: Direction) -> Direction {
   }
 }
 
-pub fn part2(map: Map) -> Int {
-  let start = find_start(map)
-  let pos_dir = #(start, Up)
-
-  let original_path =
-    step(map, start, Up, set.new())
-    |> set.to_list
-
-  original_path
-  |> list.fold(0, fn(total_loops, obstacle_pos) {
-    let #(i, j) = obstacle_pos
-    let char =
-      map
-      |> at_index(i)
-      |> option.unwrap([])
-      |> at_index(j)
-      |> option.unwrap("")
-
-    total_loops
-    + case char {
-      "^" | "#" | "" -> 0
-      _ -> {
-        let visited = set.new() |> set.insert(pos_dir)
-        let new_map =
-          map
-          |> list.index_map(fn(row, x) {
-            case x == i {
-              False -> row
-              True ->
-                list.index_map(row, fn(char, y) {
-                  case y == j {
-                    False -> char
-                    True -> "#"
-                  }
-                })
-            }
-          })
-        case step2(new_map, start, Up, visited) {
-          True -> 1
-          False -> 0
+fn find_start(map: Map) -> Result(Position, Nil) {
+  map
+  |> list.index_fold(Error(Nil), fn(result, row, y) {
+    let x_result =
+      row
+      |> list.index_fold(Error(Nil), fn(row_result, char, x) {
+        case char {
+          "^" -> Ok(x)
+          _ -> row_result
         }
-      }
+      })
+
+    case x_result {
+      Ok(x) -> Ok(Position(x, y))
+      _ -> result
     }
   })
 }
 
-fn step2(
-  map: Map,
-  pos: Position,
-  dir: Direction,
-  visited: Set(#(Position, Direction)),
-) -> Bool {
-  let dir_vec = to_direction_vector(dir)
-  let next_pos = #(pos.0 + dir_vec.0, pos.1 + dir_vec.1)
-  let next =
-    map
-    |> at_index(next_pos.0)
-    |> option.unwrap([])
-    |> at_index(next_pos.1)
-
-  let has_visited = set.contains(visited, #(next_pos, dir))
-  case has_visited {
-    True -> True
-    False ->
-      case next {
-        Some(char) -> {
-          case char {
-            "#" -> step2(map, pos, turn(dir), visited)
-            _ ->
-              step2(map, next_pos, dir, set.insert(visited, #(next_pos, dir)))
+fn add_obstacle(map: Map, pos: Position) -> Map {
+  map
+  |> list.index_map(fn(row, y) {
+    case y == pos.y {
+      False -> row
+      True ->
+        list.index_map(row, fn(char, x) {
+          case x == pos.x {
+            False -> char
+            True -> "#"
           }
-        }
-        None -> False
-      }
+        })
+    }
+  })
+}
+
+fn at_index(list: List(a), index: Int) {
+  list
+  |> list.drop(case index {
+    x if x < 0 -> list.length(list)
+    x -> x
+  })
+  |> list.first
+  |> option.from_result
+}
+
+fn at_position_in_map(map: Map, pos: Position) -> MapSquare {
+  let val =
+    map
+    |> at_index(pos.y)
+    |> option.unwrap([])
+    |> at_index(pos.x)
+
+  case val {
+    None -> MapSquare(None, pos)
+    v -> MapSquare(v, pos)
   }
+}
+
+fn next_map_square(map: Map, pos: Position, dir: Direction) -> MapSquare {
+  let dir_vec = to_direction_vector(dir)
+  at_position_in_map(map, Position(pos.x + dir_vec.x, pos.y + dir_vec.y))
+}
+
+fn count_loops_after_adding_obstacle(
+  obstacle_positions: List(Position),
+  map: Map,
+  start: Position,
+) {
+  obstacle_positions
+  |> list.fold(0, fn(total_loops, obstacle_pos) {
+    total_loops
+    + case at_position_in_map(map, obstacle_pos).value {
+      Some(".") -> {
+        let path_history = set.new() |> set.insert(PathState(start, Up))
+        let new_map = add_obstacle(map, obstacle_pos)
+        case step2(new_map, start, Up, path_history) {
+          True -> 1
+          False -> 0
+        }
+      }
+      _ -> 0
+    }
+  })
 }
