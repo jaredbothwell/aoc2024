@@ -13,7 +13,6 @@ pub fn solve() -> Nil {
 
 pub fn parse_input() {
   utils.read_input("day3")
-  |> string.join("\n")
 }
 
 pub fn part1(input) -> Int {

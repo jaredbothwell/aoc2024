@@ -1,19 +1,19 @@
 import gleam/int
 import gleam/io
 import gleam/list
-import gleam/option
 import gleam/string
 import utils
 
 pub fn solve() -> Nil {
   let input = parse_input()
-  io.println("Day 3:")
+  io.println("Day 4:")
   io.println("  Part 1: " <> int.to_string(part1(input)))
   io.println("  Part 2: " <> int.to_string(part2(input)))
 }
 
 pub fn parse_input() {
   utils.read_input("day4")
+  |> string.split("\n")
   |> list.map(fn(line) { string.split(line, "") })
 }
 
@@ -84,22 +84,8 @@ fn get_substring(
   list.range(1, length - 1)
   |> list.map(fn(distance_from_source) {
     grid
-    |> at_index(source.0 + distance_from_source * direction.0, [])
-    |> at_index(source.1 + distance_from_source * direction.1, "")
+    |> utils.at_index(source.0 + distance_from_source * direction.0, [])
+    |> utils.at_index(source.1 + distance_from_source * direction.1, "")
   })
   |> string.join("")
-}
-
-fn at_index(list: List(a), index: Int, default: a) {
-  // list.drop returns whole list when using a negative index but I need an empty list instead
-  let i = case index {
-    x if x < 0 -> list.length(list)
-    x -> x
-  }
-
-  list
-  |> list.drop(i)
-  |> list.first
-  |> option.from_result
-  |> option.unwrap(default)
 }

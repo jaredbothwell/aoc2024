@@ -14,6 +14,7 @@ pub fn solve() -> Nil {
 
 pub fn parse_input() -> List(List(Int)) {
   utils.read_input("day2")
+  |> string.split("\n")
   |> list.map(fn(line) {
     string.split(line, " ")
     |> list.map(fn(x) {

@@ -15,6 +15,7 @@ pub fn solve() -> Nil {
 
 pub fn parse_input() -> #(List(Int), List(Int)) {
   utils.read_input("day1")
+  |> string.split("\n")
   |> list.fold([], fn(acc, line) {
     case string.split(line, "   ") {
       [] | [_] | [_, _, _, ..] -> acc
