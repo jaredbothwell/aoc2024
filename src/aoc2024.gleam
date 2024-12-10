@@ -7,6 +7,7 @@ import days/day5
 import days/day6
 import days/day7
 import days/day8
+import days/day9
 import gleam/int
 import gleam/io
 
@@ -30,6 +31,7 @@ fn days(day: String) -> Nil {
         6 -> day6.solve()
         7 -> day7.solve()
         8 -> day8.solve()
+        9 -> day9.solve()
         _ -> io.println_error("Solution for day #" <> day <> " not found")
       }
   }
